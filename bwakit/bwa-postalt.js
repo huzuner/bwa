@@ -351,11 +351,11 @@ function bwa_postalt(args)
 			for (var j = 0; j < a.length; ++j) {
 				var s, e;
 				if (!a[j][4]) { // ALT is mapped to the forward strand of the primary assembly
-					s = cigar2pos(a[j][6], h.start);
-					e = cigar2pos(a[j][6], h.end - 1) + 1;
+					s = cigar2pos(a[j][6], h.start) + 2; //added +2 to all sS to align correctly, this may be wrong.
+					e = cigar2pos(a[j][6], h.end - 1) + 1 + 1; //added +1 to all eS to align correctly, this may be wrong.
 				} else {
-					s = cigar2pos(a[j][6], a[j][2] - h.end);
-					e = cigar2pos(a[j][6], a[j][2] - h.start - 1) + 1;
+					s = cigar2pos(a[j][6], a[j][2] - h.end) + 2;
+					e = cigar2pos(a[j][6], a[j][2] - h.start - 1) + 1 + 1;
 				}
 				if (s < 0 || e < 0) continue; // read is mapped to clippings in the ALT-to-chr alignment
 				s += a[j][5]; e += a[j][5];
@@ -477,6 +477,7 @@ function bwa_postalt(args)
 				hits[i].lifted_str = u;
 			}
 		}
+		print(JSON.stringify(hits));
 
 		// stage the reported hit
 		t[4] = mapQ;
@@ -484,32 +485,32 @@ function bwa_postalt(args)
 		if (hits[reported_i].lifted_str) t.push("lt:Z:" + hits[reported_i].lifted_str);
 		buf2.push(t);
 
-		// stage the hits generated from the XA tag
-		var cnt = 0, rs = null, rq = null; // rq: reverse quality; rs: reverse complement sequence
-		var rg = (m = /\t(RG:Z:\S+)/.exec(line)) != null? m[1] : null;
-		for (var i = 0; i < hits.length; ++i) {
-			if (hits[i].g != reported_g || i == reported_i) continue;
-			if (idx_alt[hits[i].ctg] == null) continue;
-			var s = [t[0], 0, hits[i].ctg, hits[i].start+1, mapQ, hits[i].cigar, t[6], t[7], t[8]];
-			if (t[6] == '=' && s[2] != t[2]) s[6] = t[2];
-			// print sequence/quality and set the rev flag
-			if (hits[i].rev == hits[reported_i].rev) {
-				s.push(t[9], t[10]);
-				s[1] = flag | 0x800;
-			} else { // we need to write the reverse sequence
-				if (rs == null || rq == null) {
-					aux.length = 0;
-					aux.set(t[9], 0); aux.revcomp(); rs = aux.toString();
-					aux.set(t[10],0); aux.reverse(); rq = aux.toString();
-				}
-				s.push(rs, rq);
-				s[1] = (flag ^ 0x10) | 0x800;
-			}
-			s.push("NM:i:" + hits[i].NM);
-			if (hits[i].lifted_str) s.push("lt:Z:" + hits[i].lifted_str);
-			if (rg != null) s.push(rg);
-			buf2.push(s);
-		}
+		// stage the hits generated from the XA tag, don't stage hits generated from the XA tag
+		// var cnt = 0, rs = null, rq = null; // rq: reverse quality; rs: reverse complement sequence
+		// var rg = (m = /\t(RG:Z:\S+)/.exec(line)) != null? m[1] : null;
+		// for (var i = 0; i < hits.length; ++i) {
+		// 	if (hits[i].g != reported_g || i == reported_i) continue;
+		// 	if (idx_alt[hits[i].ctg] == null) continue;
+		// 	var s = [t[0], 0, hits[i].ctg, hits[i].start+1, mapQ, hits[i].cigar, t[6], t[7], t[8]];
+		// 	if (t[6] == '=' && s[2] != t[2]) s[6] = t[2];
+		// 	// print sequence/quality and set the rev flag
+		// 	if (hits[i].rev == hits[reported_i].rev) {
+		// 		s.push(t[9], t[10]);
+		// 		s[1] = flag | 0x800;
+		// 	} else { // we need to write the reverse sequence
+		// 		if (rs == null || rq == null) {
+		// 			aux.length = 0;
+		// 			aux.set(t[9], 0); aux.revcomp(); rs = aux.toString();
+		// 			aux.set(t[10],0); aux.reverse(); rq = aux.toString();
+		// 		}
+		// 		s.push(rs, rq);
+		// 		s[1] = (flag ^ 0x10) | 0x800;
+		// 	}
+		// 	s.push("NM:i:" + hits[i].NM);
+		// 	if (hits[i].lifted_str) s.push("lt:Z:" + hits[i].lifted_str);
+		// 	if (rg != null) s.push(rg);
+		// 	buf2.push(s);
+		// }
 	}
 	print_buffer(buf2, fp_hla, hla);
 	file.close();
