@@ -477,7 +477,6 @@ function bwa_postalt(args)
 				hits[i].lifted_str = u;
 			}
 		}
-		print(JSON.stringify(hits));
 
 		// stage the reported hit
 		t[4] = mapQ;
